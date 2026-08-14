@@ -38,39 +38,40 @@
         }
         h1 { text-align: center; color: var(--primary); margin: 0 0 20px 0; font-size: 24px; }
         
-        /* Login Screen Styles */
-        #login-screen {
-            margin-top: 10vh;
-            text-align: center;
-        }
-        input.auth-input {
-            width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #d1d5db; font-size: 16px;
-        }
-        #login-error { color: var(--absent); text-align: center; display: none; font-weight: bold; margin-bottom: 15px; font-size: 14px;}
-        .logout-link { text-align: center; color: var(--absent); margin-top: 20px; cursor: pointer; font-weight: bold; padding: 10px;}
-
-        /* App Styles */
+        /* Login Screen */
+        #login-screen { display: block; margin-top: 10vh; text-align: center; }
+        input.auth-input { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #d1d5db; font-size: 16px; }
+        #login-error { color: var(--absent); background: #fee2e2; padding: 10px; border-radius: 8px; display: none; font-weight: bold; margin-bottom: 15px; font-size: 14px;}
+        
+        /* App Sections */
+        #main-app { display: none; }
         .tabs { display: flex; margin-bottom: 20px; background: #e5e7eb; border-radius: 8px; padding: 4px; }
         .tab-btn { flex: 1; padding: 10px; text-align: center; border: none; background: transparent; font-weight: bold; border-radius: 6px; color: var(--text-muted); cursor: pointer; transition: 0.3s; }
         .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px; }
         input[type="date"] { padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-family: inherit; font-weight: bold; width: 100%; }
         .date-picker { flex: 1; }
+        
         button { border: none; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; }
         .btn-primary { background-color: var(--primary); color: white; width: 100%; font-size: 16px; padding: 15px;}
         .btn-primary:active { background-color: var(--primary-hover); }
         .btn-add { background-color: #f3f4f6; color: var(--text-main); border: 1px solid #d1d5db; }
-        .student-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; max-height: 60vh; overflow-y: auto; padding-right: 5px; }
+        .logout-btn { background-color: var(--absent); color: white; width: 100%; margin-top: 20px; padding: 12px;}
+        
+        .student-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; max-height: 55vh; overflow-y: auto; padding-right: 5px; }
         .student-card { display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fafafa; }
         .student-info { display: flex; flex-direction: column; }
         .student-name { font-weight: bold; font-size: 15px; }
         .student-roll { color: var(--text-muted); font-size: 13px; margin-top: 4px; }
+        
+        /* Toggle Switch */
         .toggle-btn { position: relative; display: inline-block; }
         .toggle-btn input { display: none; }
         .toggle-label { display: block; padding: 10px 16px; border-radius: 20px; color: white; font-weight: bold; font-size: 13px; text-align: center; width: 85px; cursor: pointer; user-select: none; transition: background-color 0.2s; background-color: var(--absent); }
         .toggle-label::before { content: "Absent"; }
         .toggle-btn input:checked + .toggle-label { background-color: var(--present); }
         .toggle-btn input:checked + .toggle-label::before { content: "Present"; }
+        
         #history-section { display: none; }
         .history-card { padding: 15px; border: 1px solid #e5e7eb; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: #fafafa;}
         .history-date { font-weight: bold; font-size: 16px; color: var(--primary); }
@@ -78,20 +79,18 @@
         .stat-badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; margin-left: 5px; color: white; }
         .badge-present { background-color: var(--present); }
         .badge-absent { background-color: var(--absent); }
-        .status-banner { text-align: center; padding: 10px; border-radius: 8px; margin-bottom: 15px; background: #d1fae5; color: #065f46; display: none; font-weight: bold; }
         
-        /* Hide app initially */
-        #main-app { display: none; }
+        .status-banner { text-align: center; padding: 10px; border-radius: 8px; margin-bottom: 15px; background: #d1fae5; color: #065f46; display: none; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <!-- LOGIN SCREEN -->
 <div class="container" id="login-screen">
-    <h1>CR Login</h1>
-    <p style="color: var(--text-muted); margin-bottom: 20px;">Please log in to access the database.</p>
+    <h1>CR Portal Login</h1>
+    <p style="color: var(--text-muted); margin-bottom: 20px;">Welcome back. Please log in.</p>
     
-    <div id="login-error">Incorrect Username or Password.</div>
+    <div id="login-error"></div>
     
     <input type="text" id="username-input" class="auth-input" placeholder="Username (e.g. Gazal)">
     <input type="password" id="password-input" class="auth-input" placeholder="Password">
@@ -117,7 +116,10 @@
             </div>
             <button class="btn-add" id="add-student-btn">+ Add</button>
         </div>
-        <div class="student-list" id="student-list-container"></div>
+        <div class="student-list" id="student-list-container">
+            <!-- Loading indicator -->
+            <div style="text-align:center; padding: 30px; font-weight:bold; color: var(--primary);">Connecting to database...</div>
+        </div>
         <button class="btn-primary" id="save-btn">Save Attendance</button>
     </div>
 
@@ -126,16 +128,16 @@
         <div id="history-list-container"></div>
     </div>
 
-    <div class="logout-link" id="logout-btn">Log Out</div>
+    <button class="logout-btn" id="logout-btn">Log Out Securely</button>
 </div>
 
 <!-- Firebase SDKs -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
     import { getFirestore, collection, getDocs, doc, getDoc, setDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // Your secure Firebase config
+    // Firebase Config
     const firebaseConfig = {
         apiKey: "AIzaSyDbD36ACXrje1JALz3LEKupOU-6m2AElxk",
         authDomain: "attendance34.firebaseapp.com",
@@ -150,7 +152,7 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // Your complete student list
+    // Full student list
     const defaultStudents = [
         { roll: "12501068", name: "VARUN CHAWLA" }, { roll: "12501069", name: "SUHANI" },
         { roll: "12501070", name: "KESHAV KUMAR GARG" }, { roll: "12501071", name: "KAMALPREET SINGH" },
@@ -208,7 +210,7 @@
     });
 
     // Login Button clicked
-    document.getElementById('login-btn').addEventListener('click', () => {
+    document.getElementById('login-btn').addEventListener('click', async () => {
         const username = document.getElementById('username-input').value.trim().toLowerCase();
         const password = document.getElementById('password-input').value;
         const errorText = document.getElementById('login-error');
@@ -219,18 +221,18 @@
             return;
         }
 
-        // Secretly append the domain we set up in Firebase so Firebase accepts it as an email
         const email = username + "@class.com";
-        
-        // Show loading state
         document.getElementById('login-btn').innerText = "Verifying...";
         
-        signInWithEmailAndPassword(auth, email, password)
-            .catch((error) => {
-                document.getElementById('login-btn').innerText = "Log In";
-                errorText.style.display = 'block';
-                errorText.innerText = "Incorrect Username or Password.";
-            });
+        try {
+            await setPersistence(auth, browserLocalPersistence);
+            await signInWithEmailAndPassword(auth, email, password);
+            document.getElementById('login-btn').innerText = "Log In";
+        } catch (error) {
+            document.getElementById('login-btn').innerText = "Log In";
+            errorText.style.display = 'block';
+            errorText.innerHTML = "Login failed! Did you create the user in the Firebase Console?<br><br>Error code: " + error.code;
+        }
     });
 
     document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
@@ -259,11 +261,11 @@
     });
 
     async function loadStudents() {
-        listContainer.innerHTML = '<div style="text-align:center; padding: 20px;">Syncing with database...</div>';
+        listContainer.innerHTML = '<div style="text-align:center; padding: 20px;">Fetching from Firebase...</div>';
         try {
             const querySnapshot = await getDocs(collection(db, "students"));
             if (querySnapshot.empty) {
-                // If database is empty, seed it with our default array
+                // Initial DB Seed
                 const batch = writeBatch(db);
                 defaultStudents.forEach(st => {
                     const docRef = doc(db, "students", st.roll);
@@ -279,7 +281,11 @@
             await loadAttendanceForDate(dateInput.value);
         } catch (error) {
             console.error(error);
-            listContainer.innerHTML = '<div style="text-align:center; color:red; font-weight:bold;">Security Error: Database is locked or you are not logged in properly.</div>';
+            listContainer.innerHTML = `<div style="text-align:center; color:red; padding:20px; background:#fee2e2; border-radius:8px;">
+                <b>Database Access Blocked</b><br>
+                Firebase is refusing connection. Did you set the Firestore Rules correctly?<br>
+                Error: ${error.message}
+            </div>`;
         }
     }
 
@@ -307,12 +313,12 @@
         if (!selectedDate) return;
         const docSnap = await getDoc(doc(db, "attendance", selectedDate));
         if (docSnap.exists()) {
-            banner.innerText = `Loaded saved data for ${selectedDate}`;
+            banner.innerText = `Showing saved records for ${selectedDate}`;
             banner.style.display = "block";
             renderList(docSnap.data().records || {});
         } else {
             banner.style.display = "none";
-            renderList(); // Defaults to everyone absent
+            renderList();
         }
     }
 
@@ -335,14 +341,14 @@
             banner.style.display = "block";
             setTimeout(() => { banner.style.display = "none"; }, 3000);
         } catch (error) {
-            alert("Failed to save due to security rules. Check your login status.");
+            alert("Security Error: Firebase blocked the save. Check database rules.");
         } finally {
             saveBtn.disabled = false; saveBtn.innerText = "Save Attendance";
         }
     }
 
     async function loadHistory() {
-        historyContainer.innerHTML = '<div style="text-align:center; padding: 20px;">Fetching records...</div>';
+        historyContainer.innerHTML = '<div style="text-align:center; padding: 20px;">Loading history...</div>';
         try {
             const querySnapshot = await getDocs(collection(db, "attendance"));
             const historyData = [];
@@ -351,7 +357,7 @@
             
             historyContainer.innerHTML = '';
             if (historyData.length === 0) {
-                historyContainer.innerHTML = '<div style="text-align:center; padding: 20px;">No past records found.</div>';
+                historyContainer.innerHTML = '<div style="text-align:center; padding: 20px;">No records yet.</div>';
                 return;
             }
 
@@ -366,10 +372,9 @@
                 });
                 historyContainer.appendChild(div);
             });
-        } catch (error) { historyContainer.innerHTML = '<div style="text-align:center; color:red;">Permission Denied.</div>'; }
+        } catch (error) { historyContainer.innerHTML = '<div style="text-align:center; color:red;">Error loading history.</div>'; }
     }
 
-    // Add Student Admin Prompt
     document.getElementById('add-student-btn').addEventListener('click', async () => {
         const roll = prompt("Roll number:")?.trim();
         if (!roll) return;
@@ -381,9 +386,9 @@
             students.push({ roll, name });
             students.sort((a, b) => a.roll.localeCompare(b.roll));
             renderList();
-            alert("Student added permanently to database!");
+            alert("Student added permanently!");
         } catch (err) {
-            alert("Security error: You do not have permission to add students.");
+            alert("Security Error: You do not have permission.");
         }
     });
 
