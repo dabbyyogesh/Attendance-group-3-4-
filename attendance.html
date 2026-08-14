@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mobile Attendance Portal</title>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338ca;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --present: #10b981; /* Green */
+            --absent: #ef4444;  /* Red */
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            margin: 0 0 20px 0;
+            font-size: 24px;
+        }
+        
+        /* Tabs System */
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            background: #e5e7eb;
+            border-radius: 8px;
+            padding: 4px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border: none;
+            background: transparent;
+            font-weight: bold;
+            border-radius: 6px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .tab-btn.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+        input[type="date"] {
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-family: inherit;
+            font-weight: bold;
+            width: 100%;
+        }
+        .date-picker { flex: 1; }
+        
+        button {
+            border: none;
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .btn-primary { background-color: var(--primary); color: white; width: 100%; font-size: 16px; padding: 15px;}
+        .btn-primary:active { background-color: var(--primary-hover); }
+        .btn-add { background-color: #f3f4f6; color: var(--text-main); border: 1px solid #d1d5db; }
+
+        /* Mobile-Friendly Student List */
+        .student-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        .student-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            background: #fafafa;
+        }
+        .student-info {
+            display: flex;
+            flex-direction: column;
+        }
+        .student-name { font-weight: bold; font-size: 15px; }
+        .student-roll { color: var(--text-muted); font-size: 13px; margin-top: 4px; }
+
+        /* Custom Toggle Switch for Present/Absent */
+        .toggle-btn {
+            position: relative;
+            display: inline-block;
+        }
+        .toggle-btn input { display: none; }
+        .toggle-label {
+            display: block;
+            padding: 10px 16px;
+            border-radius: 20px;
+            color: white;
+            font-weight: bold;
+            font-size: 13px;
+            text-align: center;
+            width: 85px;
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.2s;
+            background-color: var(--absent); /* Defaults to Red/Absent */
+        }
+        .toggle-label::before { content: "Absent"; }
+        
+        .toggle-btn input:checked + .toggle-label {
+            background-color: var(--present); /* Changes to Green/Present */
+        }
+        .toggle-btn input:checked + .toggle-label::before { content: "Present"; }
+
+        /* History Section */
+        #history-section { display: none; }
+        .history-card {
+            padding: 15px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .history-date { font-weight: bold; font-size: 16px; color: var(--primary); }
+        .history-stats { font-size: 14px; color: var(--text-muted); }
+        .stat-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-left: 5px;
+            color: white;
+        }
+        .badge-present { background-color: var(--present); }
+        .badge-absent { background-color: var(--absent); }
+
+        .status-banner {
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            background: #d1fae5;
+            color: #065f46;
+            display: none;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Class Attendance Group (3-4)</h1>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button id="tab-take" class="tab-btn active">Take Attendance</button>
+        <button id="tab-history" class="tab-btn">View History</button>
+    </div>
+
+    <!-- Take Attendance Section -->
+    <div id="take-section">
+        <div id="status-banner" class="status-banner"></div>
+        
+        <div class="controls">
+            <div class="date-picker">
+                <input type="date" id="attendance-date">
+            </div>
+            <button class="btn-add" id="add-student-btn">+ Add</button>
+        </div>
+
+        <div class="student-list" id="student-list-container">
+            <div style="text-align:center; padding: 20px;">Loading students...</div>
+        </div>
+
+        <button class="btn-primary" id="save-btn">Save Attendance</button>
+    </div>
+
+    <!-- View History Section -->
+    <div id="history-section">
+        <div id="history-list-container">
+            <div style="text-align:center; padding: 20px;">Loading history...</div>
+        </div>
+    </div>
+</div>
+
+<!-- Firebase SDKs -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
+    import { 
+        getFirestore, collection, getDocs, doc, getDoc, setDoc, writeBatch 
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    // Your specific Firebase configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyDbD36ACXrje1JALz3LEKupOU-6m2AElxk",
+        authDomain: "attendance34.firebaseapp.com",
+        projectId: "attendance34",
+        storageBucket: "attendance34.firebasestorage.app",
+        messagingSenderId: "864641681511",
+        appId: "1:864641681511:web:7bbd7c3960e3d9dc766cc2",
+        measurementId: "G-GY7G2WW7Q5"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getFirestore(app);
+
+    // Initial student dataset
+    const defaultStudents = [
+        { roll: "12501068", name: "VARUN CHAWLA" }, { roll: "12501069", name: "SUHANI" },
+        { roll: "12501070", name: "KESHAV KUMAR GARG" }, { roll: "12501071", name: "KAMALPREET SINGH" },
+        { roll: "12501072", name: "SHALLU RANI" }, { roll: "12501073", name: "HARSH KUMAR" },
+        { roll: "12501074", name: "SUKRITI" }, { roll: "12501076", name: "ARSHPREET KAUR" },
+        { roll: "12501078", name: "ISHIKA GARG" }, { roll: "12501079", name: "YATIN TIWARI" },
+        { roll: "12501080", name: "SIMRANPREET SINGH" }, { roll: "12501084", name: "SHIVANSH GUPTA" },
+        { roll: "12501085", name: "ANSHIKA" }, { roll: "12501086", name: "DIVYANSHU" },
+        { roll: "12501087", name: "MANMEET SINGH" }, { roll: "12501088", name: "YUVRAJ" },
+        { roll: "12501090", name: "YOGESH" }, { roll: "12501092", name: "ABHINAV SHARMA" },
+        { roll: "12501093", name: "RUKSANA" }, { roll: "12501094", name: "LOVEPREET SINGH" },
+        { roll: "12501095", name: "KAMALPREET KAUR" }, { roll: "12501096", name: "BALJIT SINGH" },
+        { roll: "12501097", name: "ANKITA DHIMAN" }, { roll: "12501099", name: "RAHUL KUMAR" },
+        { roll: "12501101", name: "JASNOOR SINGH" }, { roll: "12501102", name: "HEAMANJIT GIRI" },
+        { roll: "12501103", name: "HIMANI" }, { roll: "12501104", name: "ANSHPARTAP SINGH" },
+        { roll: "12501105", name: "MAANINDER SINGH" }, { roll: "12501106", name: "GURPREET SINGH" },
+        { roll: "12501107", name: "PAVNEET KAUR" }, { roll: "12501108", name: "SOURYAVIR SINGH" },
+        { roll: "12501109", name: "GAZAL" }, { roll: "12501110", name: "NIMISH DHURIA" },
+        { roll: "12501111", name: "RUPINDERPAL KAUR" }, { roll: "12501112", name: "JASHANPREET SINGH" },
+        { roll: "12501113", name: "MONIKA RANI" }, { roll: "12501114", name: "KHWAISH AGGARWAL" },
+        { roll: "12501115", name: "GURKIRAT SINGH" }, { roll: "12501118", name: "JASMEEN KAUR" },
+        { roll: "12501119", name: "APURAVPREET SINGH BALI" }, { roll: "12501120", name: "ARMAANDEEP SINGH" },
+        { roll: "12501122", name: "MAYANK ARORA" }, { roll: "12501123", name: "TANISHA CHAWLA" },
+        { roll: "12501124", name: "NAVDEEP SINGH" }, { roll: "12501125", name: "SIMRANJEET KAUR" },
+        { roll: "12501126", name: "RAJPREET SINGH" }, { roll: "12501128", name: "HARJOT SINGH" },
+        { roll: "12501129", name: "NAVDISHA" }, { roll: "12501130", name: "AMRINDER SINGH" },
+        { roll: "12501131", name: "RAVINDER SINGH" }, { roll: "12501132", name: "PALAK" },
+        { roll: "12501133", name: "RATANDEEP KAUR" }, { roll: "12501134", name: "JASNOOR SINGH" },
+        { roll: "12501135", name: "RIDAM" }, { roll: "12501136", name: "SEHAJPREET SINGH" }
+    ];
+
+    let students = [];
+    const dateInput = document.getElementById('attendance-date');
+    const banner = document.getElementById('status-banner');
+    const listContainer = document.getElementById('student-list-container');
+    const historyContainer = document.getElementById('history-list-container');
+
+    // UI Tab Switching
+    document.getElementById('tab-take').addEventListener('click', () => {
+        document.getElementById('take-section').style.display = 'block';
+        document.getElementById('history-section').style.display = 'none';
+        document.getElementById('tab-take').classList.add('active');
+        document.getElementById('tab-history').classList.remove('active');
+    });
+
+    document.getElementById('tab-history').addEventListener('click', () => {
+        document.getElementById('take-section').style.display = 'none';
+        document.getElementById('history-section').style.display = 'block';
+        document.getElementById('tab-history').classList.add('active');
+        document.getElementById('tab-take').classList.remove('active');
+        loadHistory(); // Fetch history when tab is clicked
+    });
+
+    dateInput.valueAsDate = new Date();
+
+    // 1. Load Students
+    async function loadStudents() {
+        const querySnapshot = await getDocs(collection(db, "students"));
+        if (querySnapshot.empty) {
+            const batch = writeBatch(db);
+            defaultStudents.forEach(st => {
+                const docRef = doc(db, "students", st.roll);
+                batch.set(docRef, st);
+            });
+            await batch.commit();
+            students = [...defaultStudents];
+        } else {
+            students = [];
+            querySnapshot.forEach((d) => students.push(d.data()));
+        }
+        students.sort((a, b) => a.roll.localeCompare(b.roll));
+        await loadAttendanceForDate(dateInput.value);
+    }
+
+    // 2. Render UI List
+    function renderList(savedRecords = {}) {
+        listContainer.innerHTML = '';
+        students.forEach(student => {
+            // Default is now FALSE (Absent) instead of true
+            const isChecked = savedRecords[student.roll] !== undefined 
+                ? savedRecords[student.roll] === "Present" 
+                : false; 
+
+            const card = document.createElement('div');
+            card.className = 'student-card';
+            card.innerHTML = `
+                <div class="student-info">
+                    <span class="student-name">${student.name}</span>
+                    <span class="student-roll">${student.roll}</span>
+                </div>
+                <label class="toggle-btn">
+                    <input type="checkbox" id="student-${student.roll}" ${isChecked ? 'checked' : ''}>
+                    <span class="toggle-label"></span>
+                </label>
+            `;
+            listContainer.appendChild(card);
+        });
+    }
+
+    // 3. Load Selected Date
+    async function loadAttendanceForDate(selectedDate) {
+        if (!selectedDate) return;
+        const docSnap = await getDoc(doc(db, "attendance", selectedDate));
+
+        if (docSnap.exists()) {
+            banner.innerText = `Loaded saved data for ${selectedDate}`;
+            banner.style.display = "block";
+            renderList(docSnap.data().records || {});
+        } else {
+            banner.style.display = "none";
+            renderList(); // Renders with everyone Absent
+        }
+    }
+
+    // 4. Save Attendance
+    async function saveAttendance() {
+        const selectedDate = dateInput.value;
+        const saveBtn = document.getElementById('save-btn');
+        saveBtn.disabled = true;
+        saveBtn.innerText = "Saving...";
+
+        const recordsMap = {};
+        students.forEach(st => {
+            const isPresent = document.getElementById(`student-${st.roll}`).checked;
+            recordsMap[st.roll] = isPresent ? 'Present' : 'Absent';
+        });
+
+        try {
+            await setDoc(doc(db, "attendance", selectedDate), {
+                date: selectedDate,
+                records: recordsMap,
+                timestamp: new Date().toISOString()
+            });
+
+            banner.innerText = `Attendance successfully saved!`;
+            banner.style.display = "block";
+            
+            // Hide banner after 3 seconds
+            setTimeout(() => { banner.style.display = "none"; }, 3000);
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Failed to save.");
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.innerText = "Save Attendance";
+        }
+    }
+
+    // 5. Load History
+    async function loadHistory() {
+        historyContainer.innerHTML = '<div style="text-align:center; padding: 20px;">Fetching past records...</div>';
+        try {
+            const querySnapshot = await getDocs(collection(db, "attendance"));
+            if (querySnapshot.empty) {
+                historyContainer.innerHTML = '<div style="text-align:center; padding: 20px;">No past attendance records found.</div>';
+                return;
+            }
+
+            const historyData = [];
+            querySnapshot.forEach(doc => historyData.push(doc.data()));
+            
+            // Sort by date (newest first)
+            historyData.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            historyContainer.innerHTML = '';
+            historyData.forEach(record => {
+                let presentCount = 0;
+                let absentCount = 0;
+                
+                Object.values(record.records).forEach(status => {
+                    if (status === 'Present') presentCount++;
+                    else absentCount++;
+                });
+
+                const div = document.createElement('div');
+                div.className = 'history-card';
+                div.innerHTML = `
+                    <div class="history-date">${formatDate(record.date)}</div>
+                    <div class="history-stats">
+                        <span class="stat-badge badge-present">${presentCount} P</span>
+                        <span class="stat-badge badge-absent">${absentCount} A</span>
+                    </div>
+                `;
+                
+                // Make history card clickable to load that date in the Take section
+                div.addEventListener('click', () => {
+                    dateInput.value = record.date;
+                    document.getElementById('tab-take').click(); // switch back to take tab
+                    loadAttendanceForDate(record.date);
+                });
+
+                historyContainer.appendChild(div);
+            });
+        } catch (error) {
+            historyContainer.innerHTML = '<div style="text-align:center; color:red;">Failed to load history. Check connection.</div>';
+        }
+    }
+
+    // Helper: Format Date string
+    function formatDate(dateString) {
+        const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+        return new Date(dateString).toLocaleDateString('en-US', options);
+    }
+
+    // Add Student logic
+    document.getElementById('add-student-btn').addEventListener('click', async () => {
+        if (prompt("Enter admin password:") === "admin123") {
+            const roll = prompt("Roll number:")?.trim();
+            const name = prompt("Name:")?.trim().toUpperCase();
+            if (roll && name) {
+                await setDoc(doc(db, "students", roll), { roll, name });
+                students.push({ roll, name });
+                students.sort((a, b) => a.roll.localeCompare(b.roll));
+                renderList();
+                alert("Student added!");
+            }
+        } else {
+            alert("Incorrect password.");
+        }
+    });
+
+    document.getElementById('save-btn').addEventListener('click', saveAttendance);
+    dateInput.addEventListener('change', (e) => loadAttendanceForDate(e.target.value));
+
+    // Initialize App
+    loadStudents();
+</script>
+
+</body>
+</html>
