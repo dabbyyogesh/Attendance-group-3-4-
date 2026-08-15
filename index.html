@@ -48,17 +48,21 @@
         .tabs { display: flex; margin-bottom: 20px; background: #e5e7eb; border-radius: 8px; padding: 4px; }
         .tab-btn { flex: 1; padding: 10px; text-align: center; border: none; background: transparent; font-weight: bold; border-radius: 6px; color: var(--text-muted); cursor: pointer; transition: 0.3s; }
         .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px; }
-        input[type="date"] { padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-family: inherit; font-weight: bold; width: 100%; }
+        
+        /* Form Controls */
+        .controls { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+        .controls-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%;}
+        input[type="date"], select { padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-family: inherit; font-weight: bold; width: 100%; font-size: 14px; background-color: white;}
         .date-picker { flex: 1; }
         
         button { border: none; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; }
         .btn-primary { background-color: var(--primary); color: white; width: 100%; font-size: 16px; padding: 15px;}
         .btn-primary:active { background-color: var(--primary-hover); }
-        .btn-add { background-color: #f3f4f6; color: var(--text-main); border: 1px solid #d1d5db; }
+        .btn-add { background-color: #f3f4f6; color: var(--text-main); border: 1px solid #d1d5db; padding: 10px 15px; }
+        .btn-report { background-color: #10b981; color: white; padding: 8px 12px; font-size: 12px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
         .logout-btn { background-color: var(--absent); color: white; width: 100%; margin-top: 20px; padding: 12px;}
         
-        .student-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; max-height: 55vh; overflow-y: auto; padding-right: 5px; }
+        .student-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; max-height: 50vh; overflow-y: auto; padding-right: 5px; }
         .student-card { display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fafafa; }
         .student-info { display: flex; flex-direction: column; }
         .student-name { font-weight: bold; font-size: 15px; }
@@ -74,8 +78,8 @@
         
         #history-section { display: none; }
         .history-card { padding: 15px; border: 1px solid #e5e7eb; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: #fafafa;}
-        .history-date { font-weight: bold; font-size: 16px; color: var(--primary); }
-        .history-stats { font-size: 14px; color: var(--text-muted); }
+        .history-subject { font-weight: bold; font-size: 15px; color: var(--primary); margin-bottom: 4px;}
+        .history-stats { font-size: 13px; color: var(--text-muted); }
         .stat-badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; margin-left: 5px; color: white; }
         .badge-present { background-color: var(--present); }
         .badge-absent { background-color: var(--absent); }
@@ -111,13 +115,27 @@
     <div id="take-section">
         <div id="status-banner" class="status-banner"></div>
         <div class="controls">
-            <div class="date-picker">
-                <input type="date" id="attendance-date">
+            <!-- Subject Selector Added -->
+            <select id="attendance-subject">
+                <option value="Python Programming">Python Programming</option>
+                <option value="Data Structures">Data Structures</option>
+                <option value="Computer System Architecture">Computer System Architecture</option>
+                <option value="Discrete Mathematical Structures">Discrete Mathematical Structures</option>
+                <option value="Python Programming Lab">Python Programming Lab</option>
+                <option value="Data Structures Lab">Data Structures Lab</option>
+                <option value="Punjabi Lazmi / Compulsory / Elementary">Punjabi Lazmi / Compulsory / Elementary</option>
+                <option value="Environment and Road Safety Awareness">Environment and Road Safety Awareness</option>
+                <option value="Disaster Management and Preparedness">Disaster Management and Preparedness</option>
+            </select>
+            
+            <div class="controls-row">
+                <div class="date-picker">
+                    <input type="date" id="attendance-date">
+                </div>
+                <button class="btn-add" id="add-student-btn">+ Add</button>
             </div>
-            <button class="btn-add" id="add-student-btn">+ Add</button>
         </div>
         <div class="student-list" id="student-list-container">
-            <!-- Loading indicator -->
             <div style="text-align:center; padding: 30px; font-weight:bold; color: var(--primary);">Connecting to database...</div>
         </div>
         <button class="btn-primary" id="save-btn">Save Attendance</button>
@@ -186,6 +204,7 @@
 
     let students = [];
     const dateInput = document.getElementById('attendance-date');
+    const subjectInput = document.getElementById('attendance-subject');
     const banner = document.getElementById('status-banner');
     const listContainer = document.getElementById('student-list-container');
     const historyContainer = document.getElementById('history-list-container');
@@ -209,7 +228,6 @@
         }
     });
 
-    // Login Button clicked
     document.getElementById('login-btn').addEventListener('click', async () => {
         const username = document.getElementById('username-input').value.trim().toLowerCase();
         const password = document.getElementById('password-input').value;
@@ -221,7 +239,9 @@
             return;
         }
 
-        const email = username + "@class.com";
+        let email = username;
+        if (!email.includes("@")) { email = username + "@class.com"; }
+        
         document.getElementById('login-btn').innerText = "Verifying...";
         
         try {
@@ -231,7 +251,7 @@
         } catch (error) {
             document.getElementById('login-btn').innerText = "Log In";
             errorText.style.display = 'block';
-            errorText.innerHTML = "Login failed! Did you create the user in the Firebase Console?<br><br>Error code: " + error.code;
+            errorText.innerHTML = "Login failed! Incorrect username or password.";
         }
     });
 
@@ -244,7 +264,6 @@
         loadStudents();
     }
 
-    // Tab Switching
     document.getElementById('tab-take').addEventListener('click', () => {
         document.getElementById('take-section').style.display = 'block';
         document.getElementById('history-section').style.display = 'none';
@@ -265,7 +284,6 @@
         try {
             const querySnapshot = await getDocs(collection(db, "students"));
             if (querySnapshot.empty) {
-                // Initial DB Seed
                 const batch = writeBatch(db);
                 defaultStudents.forEach(st => {
                     const docRef = doc(db, "students", st.roll);
@@ -278,14 +296,11 @@
                 querySnapshot.forEach((d) => students.push(d.data()));
             }
             students.sort((a, b) => a.roll.localeCompare(b.roll));
-            await loadAttendanceForDate(dateInput.value);
+            // Make globally accessible for the Report Generator
+            window.globalStudents = students;
+            await loadAttendanceForConfig();
         } catch (error) {
-            console.error(error);
-            listContainer.innerHTML = `<div style="text-align:center; color:red; padding:20px; background:#fee2e2; border-radius:8px;">
-                <b>Database Access Blocked</b><br>
-                Firebase is refusing connection. Did you set the Firestore Rules correctly?<br>
-                Error: ${error.message}
-            </div>`;
+            listContainer.innerHTML = `<div style="text-align:center; color:red; padding:20px;">Database Error.</div>`;
         }
     }
 
@@ -309,11 +324,18 @@
         });
     }
 
-    async function loadAttendanceForDate(selectedDate) {
-        if (!selectedDate) return;
-        const docSnap = await getDoc(doc(db, "attendance", selectedDate));
+    // Now uses both Date and Subject as the unique identifier
+    async function loadAttendanceForConfig() {
+        const selectedDate = dateInput.value;
+        const selectedSubject = subjectInput.value;
+        if (!selectedDate || !selectedSubject) return;
+        
+        // Remove spaces to create a clean document ID (e.g., "2026-08-15_DataStructures")
+        const docId = `${selectedDate}_${selectedSubject.replace(/[\s\/()]/g, '')}`;
+
+        const docSnap = await getDoc(doc(db, "attendance", docId));
         if (docSnap.exists()) {
-            banner.innerText = `Showing saved records for ${selectedDate}`;
+            banner.innerText = `Showing saved records for ${selectedSubject}`;
             banner.style.display = "block";
             renderList(docSnap.data().records || {});
         } else {
@@ -324,24 +346,31 @@
 
     async function saveAttendance() {
         const selectedDate = dateInput.value;
+        const selectedSubject = subjectInput.value;
+        
         const saveBtn = document.getElementById('save-btn');
         saveBtn.disabled = true; saveBtn.innerText = "Saving to Cloud...";
         
+        const docId = `${selectedDate}_${selectedSubject.replace(/[\s\/()]/g, '')}`;
         const recordsMap = {};
+        
         students.forEach(st => {
             const isPresent = document.getElementById(`student-${st.roll}`).checked;
             recordsMap[st.roll] = isPresent ? 'Present' : 'Absent';
         });
 
         try {
-            await setDoc(doc(db, "attendance", selectedDate), {
-                date: selectedDate, records: recordsMap, timestamp: new Date().toISOString()
+            await setDoc(doc(db, "attendance", docId), {
+                date: selectedDate, 
+                subject: selectedSubject,
+                records: recordsMap, 
+                timestamp: new Date().toISOString()
             });
             banner.innerText = `Attendance successfully saved!`;
             banner.style.display = "block";
             setTimeout(() => { banner.style.display = "none"; }, 3000);
         } catch (error) {
-            alert("Security Error: Firebase blocked the save. Check database rules.");
+            alert("Security Error: Firebase blocked the save.");
         } finally {
             saveBtn.disabled = false; saveBtn.innerText = "Save Attendance";
         }
@@ -353,7 +382,9 @@
             const querySnapshot = await getDocs(collection(db, "attendance"));
             const historyData = [];
             querySnapshot.forEach(doc => historyData.push(doc.data()));
-            historyData.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            // Sort by timestamp newest first
+            historyData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
             
             historyContainer.innerHTML = '';
             if (historyData.length === 0) {
@@ -364,15 +395,84 @@
             historyData.forEach(record => {
                 let p = 0, a = 0;
                 Object.values(record.records).forEach(s => s === 'Present' ? p++ : a++);
+                
                 const div = document.createElement('div');
                 div.className = 'history-card';
-                div.innerHTML = `<div class="history-date">${new Date(record.date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</div><div class="history-stats"><span class="stat-badge badge-present">${p} P</span><span class="stat-badge badge-absent">${a} A</span></div>`;
-                div.addEventListener('click', () => {
-                    dateInput.value = record.date; document.getElementById('tab-take').click(); loadAttendanceForDate(record.date);
+                div.innerHTML = `
+                    <div style="flex:1;">
+                        <div class="history-subject">${record.subject || 'General'}</div>
+                        <div class="history-stats">
+                            ${new Date(record.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} 
+                            <span class="stat-badge badge-present">${p} P</span>
+                            <span class="stat-badge badge-absent">${a} A</span>
+                        </div>
+                    </div>
+                    <button class="btn-report">Make Report</button>
+                `;
+                
+                // Allow tapping card to edit
+                div.addEventListener('click', (e) => {
+                    // Prevent switching tabs if they just clicked the report button
+                    if (e.target.className === 'btn-report') return; 
+                    
+                    dateInput.value = record.date; 
+                    if(record.subject) subjectInput.value = record.subject;
+                    document.getElementById('tab-take').click(); 
+                    loadAttendanceForConfig();
                 });
+                
+                // Attach the report generator functionality
+                const reportBtn = div.querySelector('.btn-report');
+                reportBtn.addEventListener('click', (e) => generateReport(record));
+
                 historyContainer.appendChild(div);
             });
         } catch (error) { historyContainer.innerHTML = '<div style="text-align:center; color:red;">Error loading history.</div>'; }
+    }
+
+    // Function to generate and download a text report
+    function generateReport(record) {
+        let presentList = [];
+        let totalPresent = 0;
+        
+        // Match roll numbers to names for the report
+        const sortedRolls = Object.keys(record.records).sort();
+        sortedRolls.forEach(roll => {
+            if(record.records[roll] === 'Present') {
+                let st = window.globalStudents.find(s => s.roll === roll);
+                presentList.push(`${roll} - ${st ? st.name : 'Unknown'}`);
+                totalPresent++;
+            }
+        });
+        
+        // Build the text file content
+        let reportText = `=======================================\n`;
+        reportText += `       ATTENDANCE REPORT\n`;
+        reportText += `=======================================\n`;
+        reportText += `Date Saved   : ${record.date}\n`;
+        reportText += `Time Saved   : ${new Date(record.timestamp).toLocaleTimeString()}\n`;
+        reportText += `Subject      : ${record.subject || 'Not Specified'}\n`;
+        reportText += `Total Present: ${totalPresent}\n`;
+        reportText += `---------------------------------------\n\n`;
+        reportText += `PRESENT STUDENTS:\n`;
+        
+        if (presentList.length > 0) {
+            reportText += presentList.join('\n');
+        } else {
+            reportText += `(No students marked as present)`;
+        }
+
+        // Trigger Download
+        const blob = new Blob([reportText], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const cleanSubjectName = (record.subject || 'Report').replace(/[\s\/]/g, '_');
+        a.download = `Attendance_${cleanSubjectName}_${record.date}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     }
 
     document.getElementById('add-student-btn').addEventListener('click', async () => {
@@ -393,7 +493,10 @@
     });
 
     document.getElementById('save-btn').addEventListener('click', saveAttendance);
-    dateInput.addEventListener('change', (e) => loadAttendanceForDate(e.target.value));
+    
+    // Reload database display whenever Date OR Subject changes
+    dateInput.addEventListener('change', loadAttendanceForConfig);
+    subjectInput.addEventListener('change', loadAttendanceForConfig);
 </script>
 </body>
 </html>
