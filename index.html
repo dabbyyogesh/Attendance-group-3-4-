@@ -55,14 +55,14 @@
         input[type="date"], select { padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-family: inherit; font-weight: bold; width: 100%; font-size: 14px; background-color: white;}
         .date-picker { flex: 1; }
         
-        button { border: none; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        button { border: none; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; transition: background-color 0.2s;}
         .btn-primary { background-color: var(--primary); color: white; width: 100%; font-size: 16px; padding: 15px;}
         .btn-primary:active { background-color: var(--primary-hover); }
         .btn-add { background-color: #f3f4f6; color: var(--text-main); border: 1px solid #d1d5db; padding: 10px 15px; }
-        .btn-report { background-color: #10b981; color: white; padding: 8px 12px; font-size: 12px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
+        .btn-report { background-color: #10b981; color: white; padding: 8px 12px; font-size: 12px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); white-space: nowrap;}
         .logout-btn { background-color: var(--absent); color: white; width: 100%; margin-top: 20px; padding: 12px;}
         
-        .student-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; max-height: 50vh; overflow-y: auto; padding-right: 5px; }
+        .student-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; max-height: 45vh; overflow-y: auto; padding-right: 5px; }
         .student-card { display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fafafa; }
         .student-info { display: flex; flex-direction: column; }
         .student-name { font-weight: bold; font-size: 15px; }
@@ -79,8 +79,8 @@
         #history-section { display: none; }
         .history-card { padding: 15px; border: 1px solid #e5e7eb; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: #fafafa;}
         .history-subject { font-weight: bold; font-size: 15px; color: var(--primary); margin-bottom: 4px;}
-        .history-stats { font-size: 13px; color: var(--text-muted); }
-        .stat-badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; margin-left: 5px; color: white; }
+        .history-stats { font-size: 13px; color: var(--text-muted); line-height: 1.6;}
+        .stat-badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; margin-right: 5px; color: white; display: inline-block;}
         .badge-present { background-color: var(--present); }
         .badge-absent { background-color: var(--absent); }
         
@@ -115,7 +115,7 @@
     <div id="take-section">
         <div id="status-banner" class="status-banner"></div>
         <div class="controls">
-            <!-- Subject Selector Added -->
+            <!-- Subject Selector -->
             <select id="attendance-subject">
                 <option value="Python Programming">Python Programming</option>
                 <option value="Data Structures">Data Structures</option>
@@ -128,6 +128,29 @@
                 <option value="Disaster Management and Preparedness">Disaster Management and Preparedness</option>
             </select>
             
+            <!-- Time Selector -->
+            <select id="attendance-time">
+                <optgroup label="1-Hour Slots (Lectures)">
+                    <option value="9:00 AM - 10:00 AM">9:00 AM - 10:00 AM</option>
+                    <option value="10:00 AM - 11:00 AM">10:00 AM - 11:00 AM</option>
+                    <option value="11:00 AM - 12:00 PM">11:00 AM - 12:00 PM</option>
+                    <option value="12:00 PM - 1:00 PM">12:00 PM - 1:00 PM</option>
+                    <option value="1:00 PM - 2:00 PM">1:00 PM - 2:00 PM</option>
+                    <option value="2:00 PM - 3:00 PM">2:00 PM - 3:00 PM</option>
+                    <option value="3:00 PM - 4:00 PM">3:00 PM - 4:00 PM</option>
+                    <option value="4:00 PM - 5:00 PM">4:00 PM - 5:00 PM</option>
+                    <option value="5:00 PM - 6:00 PM">5:00 PM - 6:00 PM</option>
+                </optgroup>
+                <optgroup label="2-Hour Slots (Labs)">
+                    <option value="9:00 AM - 11:00 AM">9:00 AM - 11:00 AM</option>
+                    <option value="11:00 AM - 1:00 PM">11:00 AM - 1:00 PM</option>
+                    <option value="1:00 PM - 3:00 PM">1:00 PM - 3:00 PM</option>
+                    <option value="2:00 PM - 4:00 PM">2:00 PM - 4:00 PM</option>
+                    <option value="3:00 PM - 5:00 PM">3:00 PM - 5:00 PM</option>
+                    <option value="4:00 PM - 6:00 PM">4:00 PM - 6:00 PM</option>
+                </optgroup>
+            </select>
+
             <div class="controls-row">
                 <div class="date-picker">
                     <input type="date" id="attendance-date">
@@ -205,6 +228,7 @@
     let students = [];
     const dateInput = document.getElementById('attendance-date');
     const subjectInput = document.getElementById('attendance-subject');
+    const timeInput = document.getElementById('attendance-time');
     const banner = document.getElementById('status-banner');
     const listContainer = document.getElementById('student-list-container');
     const historyContainer = document.getElementById('history-list-container');
@@ -324,14 +348,17 @@
         });
     }
 
-    // Now uses both Date and Subject as the unique identifier
+    // Now uses Date, Time, and Subject as the unique identifier
     async function loadAttendanceForConfig() {
         const selectedDate = dateInput.value;
         const selectedSubject = subjectInput.value;
-        if (!selectedDate || !selectedSubject) return;
+        const selectedTime = timeInput.value;
+        if (!selectedDate || !selectedSubject || !selectedTime) return;
         
-        // Remove spaces to create a clean document ID (e.g., "2026-08-15_DataStructures")
-        const docId = `${selectedDate}_${selectedSubject.replace(/[\s\/()]/g, '')}`;
+        // Remove spaces and special chars to create a clean document ID
+        const cleanTime = selectedTime.replace(/[\s:-]/g, '');
+        const cleanSubject = selectedSubject.replace(/[\s\/()]/g, '');
+        const docId = `${selectedDate}_${cleanTime}_${cleanSubject}`;
 
         const docSnap = await getDoc(doc(db, "attendance", docId));
         if (docSnap.exists()) {
@@ -347,11 +374,14 @@
     async function saveAttendance() {
         const selectedDate = dateInput.value;
         const selectedSubject = subjectInput.value;
+        const selectedTime = timeInput.value;
         
         const saveBtn = document.getElementById('save-btn');
         saveBtn.disabled = true; saveBtn.innerText = "Saving to Cloud...";
         
-        const docId = `${selectedDate}_${selectedSubject.replace(/[\s\/()]/g, '')}`;
+        const cleanTime = selectedTime.replace(/[\s:-]/g, '');
+        const cleanSubject = selectedSubject.replace(/[\s\/()]/g, '');
+        const docId = `${selectedDate}_${cleanTime}_${cleanSubject}`;
         const recordsMap = {};
         
         students.forEach(st => {
@@ -362,6 +392,7 @@
         try {
             await setDoc(doc(db, "attendance", docId), {
                 date: selectedDate, 
+                time: selectedTime,
                 subject: selectedSubject,
                 records: recordsMap, 
                 timestamp: new Date().toISOString()
@@ -402,12 +433,15 @@
                     <div style="flex:1;">
                         <div class="history-subject">${record.subject || 'General'}</div>
                         <div class="history-stats">
-                            ${new Date(record.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} 
-                            <span class="stat-badge badge-present">${p} P</span>
-                            <span class="stat-badge badge-absent">${a} A</span>
+                            ${new Date(record.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}<br>
+                            ${record.time || 'Time Not Specified'}
+                            <div style="margin-top: 6px;">
+                                <span class="stat-badge badge-present">${p} P</span>
+                                <span class="stat-badge badge-absent">${a} A</span>
+                            </div>
                         </div>
                     </div>
-                    <button class="btn-report">Make Report</button>
+                    <button class="btn-report">Copy Report</button>
                 `;
                 
                 // Allow tapping card to edit
@@ -417,21 +451,23 @@
                     
                     dateInput.value = record.date; 
                     if(record.subject) subjectInput.value = record.subject;
+                    if(record.time) timeInput.value = record.time;
+                    
                     document.getElementById('tab-take').click(); 
                     loadAttendanceForConfig();
                 });
                 
-                // Attach the report generator functionality
+                // Attach the report generator functionality (Copy to Clipboard)
                 const reportBtn = div.querySelector('.btn-report');
-                reportBtn.addEventListener('click', (e) => generateReport(record));
+                reportBtn.addEventListener('click', (e) => generateReport(record, reportBtn));
 
                 historyContainer.appendChild(div);
             });
         } catch (error) { historyContainer.innerHTML = '<div style="text-align:center; color:red;">Error loading history.</div>'; }
     }
 
-    // Function to generate and download a text report
-    function generateReport(record) {
+    // Function to generate and COPY a text report to clipboard
+    function generateReport(record, btnElement) {
         let presentList = [];
         let totalPresent = 0;
         
@@ -449,9 +485,9 @@
         let reportText = `=======================================\n`;
         reportText += `       ATTENDANCE REPORT\n`;
         reportText += `=======================================\n`;
-        reportText += `Date Saved   : ${record.date}\n`;
-        reportText += `Time Saved   : ${new Date(record.timestamp).toLocaleTimeString()}\n`;
         reportText += `Subject      : ${record.subject || 'Not Specified'}\n`;
+        reportText += `Date         : ${record.date}\n`;
+        reportText += `Time Slot    : ${record.time || 'Not Specified'}\n`;
         reportText += `Total Present: ${totalPresent}\n`;
         reportText += `---------------------------------------\n\n`;
         reportText += `PRESENT STUDENTS:\n`;
@@ -462,17 +498,22 @@
             reportText += `(No students marked as present)`;
         }
 
-        // Trigger Download
-        const blob = new Blob([reportText], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        const cleanSubjectName = (record.subject || 'Report').replace(/[\s\/]/g, '_');
-        a.download = `Attendance_${cleanSubjectName}_${record.date}.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        // Trigger Copy to Clipboard
+        navigator.clipboard.writeText(reportText).then(() => {
+            // Visual feedback on the button
+            const originalText = btnElement.innerText;
+            btnElement.innerText = "Copied!";
+            btnElement.style.backgroundColor = "#4F46E5"; // Change to primary color
+            
+            // Revert back after 2 seconds
+            setTimeout(() => {
+                btnElement.innerText = originalText;
+                btnElement.style.backgroundColor = "#10b981"; // Revert to green
+            }, 2000);
+        }).catch(err => {
+            alert("Clipboard access denied by browser. Could not copy.");
+            console.error(err);
+        });
     }
 
     document.getElementById('add-student-btn').addEventListener('click', async () => {
@@ -494,9 +535,10 @@
 
     document.getElementById('save-btn').addEventListener('click', saveAttendance);
     
-    // Reload database display whenever Date OR Subject changes
+    // Reload database display whenever Date, Subject, or Time changes
     dateInput.addEventListener('change', loadAttendanceForConfig);
     subjectInput.addEventListener('change', loadAttendanceForConfig);
+    timeInput.addEventListener('change', loadAttendanceForConfig);
 </script>
 </body>
 </html>
