@@ -59,7 +59,11 @@
         .btn-primary { background-color: var(--primary); color: white; width: 100%; font-size: 16px; padding: 15px;}
         .btn-primary:active { background-color: var(--primary-hover); }
         .btn-add { background-color: #f3f4f6; color: var(--text-main); border: 1px solid #d1d5db; padding: 10px 15px; }
+        
+        /* History Action Buttons */
+        .history-actions { display: flex; flex-direction: column; gap: 6px; }
         .btn-report { background-color: #10b981; color: white; padding: 8px 12px; font-size: 12px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); white-space: nowrap;}
+        .btn-delete { background-color: var(--absent); color: white; padding: 8px 12px; font-size: 12px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); white-space: nowrap;}
         .logout-btn { background-color: var(--absent); color: white; width: 100%; margin-top: 20px; padding: 12px;}
         
         .student-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; max-height: 45vh; overflow-y: auto; padding-right: 5px; }
@@ -174,9 +178,10 @@
 
 <!-- Firebase SDKs -->
 <script type="module">
+    // Make sure deleteDoc is added to the import list
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getFirestore, collection, getDocs, doc, getDoc, setDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, doc, getDoc, setDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     // Firebase Config
     const firebaseConfig = {
@@ -320,7 +325,6 @@
                 querySnapshot.forEach((d) => students.push(d.data()));
             }
             students.sort((a, b) => a.roll.localeCompare(b.roll));
-            // Make globally accessible for the Report Generator
             window.globalStudents = students;
             await loadAttendanceForConfig();
         } catch (error) {
@@ -348,14 +352,12 @@
         });
     }
 
-    // Now uses Date, Time, and Subject as the unique identifier
     async function loadAttendanceForConfig() {
         const selectedDate = dateInput.value;
         const selectedSubject = subjectInput.value;
         const selectedTime = timeInput.value;
         if (!selectedDate || !selectedSubject || !selectedTime) return;
         
-        // Remove spaces and special chars to create a clean document ID
         const cleanTime = selectedTime.replace(/[\s:-]/g, '');
         const cleanSubject = selectedSubject.replace(/[\s\/()]/g, '');
         const docId = `${selectedDate}_${cleanTime}_${cleanSubject}`;
@@ -412,9 +414,9 @@
         try {
             const querySnapshot = await getDocs(collection(db, "attendance"));
             const historyData = [];
-            querySnapshot.forEach(doc => historyData.push(doc.data()));
+            // We now capture doc.id so we can delete the correct record
+            querySnapshot.forEach(doc => historyData.push({ id: doc.id, ...doc.data() }));
             
-            // Sort by timestamp newest first
             historyData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
             
             historyContainer.innerHTML = '';
@@ -441,13 +443,16 @@
                             </div>
                         </div>
                     </div>
-                    <button class="btn-report">Copy Report</button>
+                    <div class="history-actions">
+                        <button class="btn-report">Copy Report</button>
+                        <button class="btn-delete">Delete</button>
+                    </div>
                 `;
                 
-                // Allow tapping card to edit
+                // Clicking the card loads it in the "Take Attendance" tab
                 div.addEventListener('click', (e) => {
-                    // Prevent switching tabs if they just clicked the report button
-                    if (e.target.className === 'btn-report') return; 
+                    // Prevent switching tabs if they click action buttons
+                    if (e.target.classList.contains('btn-report') || e.target.classList.contains('btn-delete')) return; 
                     
                     dateInput.value = record.date; 
                     if(record.subject) subjectInput.value = record.subject;
@@ -457,21 +462,41 @@
                     loadAttendanceForConfig();
                 });
                 
-                // Attach the report generator functionality (Copy to Clipboard)
+                // Copy Report Button Logic
                 const reportBtn = div.querySelector('.btn-report');
-                reportBtn.addEventListener('click', (e) => generateReport(record, reportBtn));
+                reportBtn.addEventListener('click', () => generateReport(record, reportBtn));
+
+                // Delete Button Logic
+                const deleteBtn = div.querySelector('.btn-delete');
+                deleteBtn.addEventListener('click', async () => {
+                    const confirmDelete = confirm(`Are you sure you want to delete the attendance for ${record.subject} on ${record.date}? This cannot be undone.`);
+                    
+                    if (confirmDelete) {
+                        try {
+                            deleteBtn.innerText = "Deleting...";
+                            await deleteDoc(doc(db, "attendance", record.id));
+                            div.remove(); // Remove card from UI
+                            
+                            // Check if that was the last record
+                            if (historyContainer.children.length === 0) {
+                                historyContainer.innerHTML = '<div style="text-align:center; padding: 20px;">No records yet.</div>';
+                            }
+                        } catch (error) {
+                            alert("Error: Could not delete record. Check your permissions.");
+                            deleteBtn.innerText = "Delete";
+                        }
+                    }
+                });
 
                 historyContainer.appendChild(div);
             });
         } catch (error) { historyContainer.innerHTML = '<div style="text-align:center; color:red;">Error loading history.</div>'; }
     }
 
-    // Function to generate and COPY a text report to clipboard
     function generateReport(record, btnElement) {
         let presentList = [];
         let totalPresent = 0;
         
-        // Match roll numbers to names for the report
         const sortedRolls = Object.keys(record.records).sort();
         sortedRolls.forEach(roll => {
             if(record.records[roll] === 'Present') {
@@ -481,7 +506,6 @@
             }
         });
         
-        // Build the text file content
         let reportText = `=======================================\n`;
         reportText += `       ATTENDANCE REPORT\n`;
         reportText += `=======================================\n`;
@@ -498,17 +522,14 @@
             reportText += `(No students marked as present)`;
         }
 
-        // Trigger Copy to Clipboard
         navigator.clipboard.writeText(reportText).then(() => {
-            // Visual feedback on the button
             const originalText = btnElement.innerText;
             btnElement.innerText = "Copied!";
-            btnElement.style.backgroundColor = "#4F46E5"; // Change to primary color
+            btnElement.style.backgroundColor = "#4F46E5"; 
             
-            // Revert back after 2 seconds
             setTimeout(() => {
                 btnElement.innerText = originalText;
-                btnElement.style.backgroundColor = "#10b981"; // Revert to green
+                btnElement.style.backgroundColor = "#10b981"; 
             }, 2000);
         }).catch(err => {
             alert("Clipboard access denied by browser. Could not copy.");
@@ -535,7 +556,6 @@
 
     document.getElementById('save-btn').addEventListener('click', saveAttendance);
     
-    // Reload database display whenever Date, Subject, or Time changes
     dateInput.addEventListener('change', loadAttendanceForConfig);
     subjectInput.addEventListener('change', loadAttendanceForConfig);
     timeInput.addEventListener('change', loadAttendanceForConfig);
